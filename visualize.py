@@ -6,8 +6,9 @@ import numpy as np
 
 from datasets.SplishSplash import SplishSplashDataset
 
-
-idx = 0
+data_idx = 0
+dataset = SplishSplashDataset(train=True, shuffle=False, window=1)
+data_length = len(dataset)
 
 def getpos(i):
     data = dataset[i]['data0']
@@ -24,55 +25,45 @@ def getpos(i):
     return pos.numpy(), path
 
 
-def keyfunc(evt):
-    vedo.printc('keyfunc called, pressed key:', evt.keyPressed)
-    if evt.keyPressed == '[':
-        pass
-    elif evt.keyPressed == ']':
-        pass
+def keyfunc(key):
+    global data_idx
+    if key == 'Left' and data_idx > 0:
+        data_idx -= 1
+    elif key == 'Right' and data_idx < data_length - 1:
+        data_idx += 1
 
+    pos, path = getpos(data_idx)
+    plt.clear()
+
+    plt.add(vedo.Points(pos, c='b'))
+    plt.add(vedo.Text2D(path, pos=(.02, .02), c='k'))
+
+    plt.add(boundary_mesh)
     plt.render()
 
 
-def slider2(widget, event):
-    value = int(widget.GetRepresentation().GetValue())
-    pos, path = getpos(value)
-    plt.show(pts, f'{idx}: {path}')
-    print('slider called, current value:', value)
+plt = vedo.Plotter(interactive=False)
 
-def buttonfunc():
-    print("button pressed")
-    global idx
-    idx += 1
-    print(idx)
-    pos, path = getpos(idx)
-    plt.show(pts, f'{idx}: {path}')
+pos, path = getpos(data_idx)
 
-
-def print_points(print_idx):
-    pos, path = getpos(print_idx)
-    show
-
-
-
-dataset = SplishSplashDataset(train=True, shuffle=False, window=1)
-
-
-pos, path = getpos(idx)
-plt = vedo.Plotter(axes=1, interactive=True)
 pts = vedo.Points(pos, c='b')
-plt.addCallback('KeyPress', keyfunc)
+plt.keyPressFunction = keyfunc
 
-data_length = len(dataset)
-
-plt.addSlider2D(slider2, 0, data_length,
-               pos=[(0.1, 0.1), (0.9, 0.1)], c="blue", title="alpha value (opacity)")
+data_info = vedo.Text2D(path, pos=(.02, .02), c='k')
 
 
-bu = plt.addButton(
-    buttonfunc,
-    pos=(0.7, 0.05),  # x,y fraction from bottom left corner
-    states=["Next state"],
-)
+verts = [(-1.5, 0, -1.5), (-1.5, 0, 1.5), (1.5, 0, 1.5), (1.5, 0, -1.5), (-1.5, 5, -1.5), (-1.5, 5, 1.5), (1.5, 5, 1.5),
+         (1.5, 5, -1.5)]
+# faces = [(3,2,1,0),(0,1,5,4),(4,5,6,7),(2,3,7,6),(1,2,6,5),(4,7,3,0)]
+faces = [(3, 2, 1, 0), (0, 1, 5, 4), (4, 7, 3, 0)]
 
-plt.show(pts, f'{idx}: {path}')
+boundary_mesh = vedo.Mesh([verts, faces]).lineColor('black').lineWidth(1)
+
+plt += boundary_mesh
+plt += pts
+plt += data_info
+
+
+plt.show()
+
+vedo.interactive()
